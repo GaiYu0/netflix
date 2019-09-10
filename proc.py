@@ -9,8 +9,18 @@ from pyspark.sql.types import *
 csv = sys.argv[1]
 
 ss = SparkSession.builder.getOrCreate()
-df = ss.read.csv(csv, 'iid INT, uid INT, r FLOAT, t INT')
+df = ss.read.csv(csv, 'iid INT, uid INT, r FLOAT, date INT')
 
 data_frame_to_array = lambda df: np.array(df.rdd.flatMap(lambda x: x).collect())
 
-days = lambda x: [x[0], (date(*map(int, x[1].split('-'))) - date(1, 1, 1)).days]
+days = lambda x: (date(*map(int, x.split('-'))) - date(1, 1, 1)).days
+df = df.withColumn('t', F.udf(days, IntegerType())(df.date))
+df = df.sort('uid', 't')
+
+uid = data_frame_to_array(sorted_df.select('uid'))
+iid = data_frame_to_array(sorted_df.select('iid'))
+r = data_frame_to_array(sorted_df.select('r'))
+
+np.save('uids', uids)
+np.save('iids', iids)
+np.save('rs', rs)
